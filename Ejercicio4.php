@@ -6,8 +6,11 @@ $db = mysqli_connect('localhost', 'root', 'root') or die('Unable to connect. Che
 mysqli_select_db($db, 'moviesite') or die(mysqli_error($db));
 
 // Determine the current page number
-$page = isset($_GET['page']) ? $_GET['page'] : 1;
+$page = isset($_GET['pagina']) ? $_GET['pagina'] : 1;
 $itemsPerPage = 5; // Number of items to display per page
+
+// Check if 'searchs' key exists in $_GET
+$buskr = isset($_GET['searchs']) ? $_GET['searchs'] : '';
 
 // Calculate the offset for the LIMIT clause
 $offset = ($page - 1) * $itemsPerPage;
@@ -22,14 +25,27 @@ FROM
 LEFT JOIN 
     people AS director ON movie.movie_director = director.people_id
 LEFT JOIN 
-    people AS lead_actor ON movie.movie_leadactor = lead_actor.people_id
-LIMIT $offset, $itemsPerPage";
+    people AS lead_actor ON movie.movie_leadactor = lead_actor.people_id";
+
+// If a search term is provided, add a WHERE clause to the query
+if (!empty($buskr)) {
+    $query .= " WHERE movie.movie_name LIKE '%$buskr%'";
+}
+
+// Add LIMIT clause for pagination
+$query .= " LIMIT $offset, $itemsPerPage";
 
 // Execute the query
 $result = mysqli_query($db, $query) or die(mysqli_error($db));
 
 // Count the total number of rows for pagination
 $totalRowsQuery = "SELECT COUNT(*) AS total FROM movie";
+
+// If a search term is provided, add a WHERE clause to the totalRowsQuery as well
+if (!empty($buskr)) {
+    $totalRowsQuery .= " WHERE movie.movie_name LIKE '%$buskr%'";
+}
+
 $totalRowsResult = mysqli_query($db, $totalRowsQuery);
 $totalRows = mysqli_fetch_assoc($totalRowsResult)['total'];
 
@@ -51,7 +67,7 @@ echo '</table>';
 // Display pagination links
 echo '<div>';
 for ($i = 1; $i <= $totalPages; $i++) {
-    echo '<a href="?page=' . $i . '">Page ' . $i . '</a> ';
+    echo '<a href="?pagina=' . $i . '&searchs=' . urlencode($buskr) . '">Page ' . $i . '</a> ';
 }
 echo '</div>';
 
